@@ -10,6 +10,7 @@ import httpx
 from backend.app.core.config import settings
 from backend.app.core.errors import IngestionError, ResourceLimitExceededError
 from backend.app.core.logging import logger
+from backend.app.core.resources import resource_path
 from backend.app.core.security import normalize_and_validate_github_url
 from backend.app.ingestion.archive_guard import SafeArchiveExtractor
 
@@ -122,7 +123,12 @@ class SafeRepoFetcher:
         """
         用于本地测试、Fixture 或测试目录的安全导入。
         """
-        source_path = Path(local_dir).resolve()
+        requested_path = Path(local_dir).expanduser()
+        if requested_path.is_absolute():
+            source_path = requested_path.resolve()
+        else:
+            bundled_path = resource_path(local_dir)
+            source_path = bundled_path if bundled_path.exists() else requested_path.resolve()
         if not source_path.exists() or not source_path.is_dir():
             raise IngestionError(f"本地测试目录不存在: {local_dir}")
 

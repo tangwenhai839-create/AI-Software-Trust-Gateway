@@ -4,6 +4,7 @@ import json
 import logging
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict
 
 from backend.app.core.config import settings
@@ -66,7 +67,14 @@ def setup_logger(name: str = "astg") -> StructuredLoggerWrapper:
                 pass
     raw_logger = logging.getLogger(name)
     if not raw_logger.handlers:
-        handler = logging.StreamHandler(sys.stdout)
+        if sys.stdout is not None:
+            handler = logging.StreamHandler(sys.stdout)
+        else:
+            # A windowed PyInstaller application has no console streams. Keep
+            # structured backend diagnostics in the persistent data directory.
+            log_dir = Path(settings.ASTG_DATA_DIR)
+            log_dir.mkdir(parents=True, exist_ok=True)
+            handler = logging.FileHandler(log_dir / "backend.log", encoding="utf-8")
         handler.setFormatter(RedactingJsonFormatter())
         raw_logger.addHandler(handler)
         raw_logger.setLevel(getattr(logging, settings.ASTG_LOG_LEVEL.upper(), logging.INFO))

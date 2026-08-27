@@ -139,7 +139,18 @@ class DesktopLauncher:
         import uvicorn
         from backend.app.main import app
 
-        config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="info", access_log=False)
+        # PyInstaller's --windowed mode intentionally sets stdout/stderr to None.
+        # Uvicorn's default formatter calls stderr.isatty(), which crashes the
+        # installed desktop build. ASTG owns its file logging, so do not install
+        # Uvicorn's console-oriented logging configuration here.
+        config = uvicorn.Config(
+            app,
+            host="127.0.0.1",
+            port=8000,
+            log_level="info",
+            access_log=False,
+            log_config=None,
+        )
         self.api_server = uvicorn.Server(config)
         self.api_thread = threading.Thread(target=self.api_server.run, name="astg-api", daemon=True)
         self.api_thread.start()

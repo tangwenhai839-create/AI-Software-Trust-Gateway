@@ -48,6 +48,7 @@ try {
         --specpath $pyinstallerWork `
         --add-data "$projectRoot\rules;rules" `
         --add-data "$projectRoot\schemas;schemas" `
+        --add-data "$projectRoot\fixtures;fixtures" `
         --hidden-import backend.app.db.models `
         --hidden-import aiosqlite `
         --collect-all aiosqlite `
@@ -92,5 +93,7 @@ if (-not $iscc) {
 & $iscc (Join-Path $PSScriptRoot 'astg.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
 
-$installer = Get-ChildItem (Join-Path $distRoot 'installer\AI-Software-Trust-Gateway-Setup-*.exe') | Select-Object -First 1
+$installer = Get-ChildItem (Join-Path $distRoot 'installer\AI-Software-Trust-Gateway-Setup-*.exe') |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
 Write-Host "Installer completed: $($installer.FullName)"
