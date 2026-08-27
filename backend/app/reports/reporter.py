@@ -131,6 +131,7 @@ class ReportGenerator:
                             "advisory_id": v.advisory_id,
                             "aliases": v.aliases,
                             "summary": v.summary,
+                            "details": v.details,
                             "cvss_score": v.cvss_score,
                             "severity": v.severity.value,
                             "fixed_versions": v.fixed_versions,

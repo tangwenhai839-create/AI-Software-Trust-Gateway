@@ -99,7 +99,11 @@ class SafeRepoFetcher:
         # 3. 安全解压
         raw_extract = scan_dir / "raw"
         raw_extract.mkdir(parents=True, exist_ok=True)
-        size_bytes, file_count, _ = SafeArchiveExtractor.extract_zip(str(archive_path), str(raw_extract))
+        size_bytes, file_count, _ = SafeArchiveExtractor.extract_zip(
+            str(archive_path),
+            str(raw_extract),
+            strip_single_root=True,
+        )
 
         # 处理 GitHub zipball 解压后的单层根目录包装 (e.g. owner-repo-sha/)
         entries = list(raw_extract.iterdir())

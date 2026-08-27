@@ -3,7 +3,7 @@
 import ipaddress
 import re
 import socket
-from typing import Tuple
+from typing import Optional, Set, Tuple
 from urllib.parse import urlparse
 
 from backend.app.core.errors import SSRFValidationError
@@ -61,7 +61,10 @@ def normalize_and_validate_github_url(url_str: str) -> Tuple[str, str, str]:
     return canonical_url, owner, repo
 
 
-def validate_outbound_url_ssrf(url_str: str) -> bool:
+def validate_outbound_url_ssrf(
+    url_str: str,
+    allow_proxy_fake_ip_for: Optional[Set[str]] = None,
+) -> bool:
     """
     验证外发 HTTP URL 是否安全，拦截内网、回环、本地及元数据地址。
     """
@@ -84,10 +87,17 @@ def validate_outbound_url_ssrf(url_str: str) -> bool:
         except socket.gaierror as e:
             raise SSRFValidationError(f"无法解析主机名 '{hostname}': {str(e)}")
 
+        allowed_fake_ip_hosts = {host.lower() for host in (allow_proxy_fake_ip_for or set())}
+        proxy_fake_ip_network = ipaddress.ip_network("198.18.0.0/15")
         for item in addr_info:
             ip_str = item[4][0]
             ip = ipaddress.ip_address(ip_str)
-            if (
+            is_allowed_proxy_fake_ip = (
+                hostname_lower in allowed_fake_ip_hosts
+                and ip.version == 4
+                and ip in proxy_fake_ip_network
+            )
+            if not is_allowed_proxy_fake_ip and (
                 ip.is_private
                 or ip.is_loopback
                 or ip.is_link_local

@@ -14,7 +14,12 @@ class SafeArchiveExtractor:
     """安全解压工具，防范恶意归档文件"""
 
     @classmethod
-    def extract_zip(cls, zip_path: str, extract_to: str) -> Tuple[int, int, List[str]]:
+    def extract_zip(
+        cls,
+        zip_path: str,
+        extract_to: str,
+        strip_single_root: bool = False,
+    ) -> Tuple[int, int, List[str]]:
         """
         安全解压 ZIP 文件。
         返回 (total_size_bytes, total_files_count, extracted_files_list)
@@ -37,6 +42,16 @@ class SafeArchiveExtractor:
                     f"归档内文件数 ({len(infolist)}) 超出上限 {max_files}"
                 )
 
+            # GitHub zipballs wrap every item in owner-repo-commit/. Removing
+            # that redundant layer before writing avoids wasting dozens of
+            # characters from Windows' legacy MAX_PATH budget.
+            root_prefix = ""
+            if strip_single_root:
+                safe_names = [item.filename.replace("\\", "/").lstrip("/") for item in infolist]
+                top_levels = {name.split("/", 1)[0] for name in safe_names if name}
+                if len(top_levels) == 1:
+                    root_prefix = next(iter(top_levels)) + "/"
+
             for member in infolist:
                 # 检查单文件大小
                 if member.file_size > max_single_file_bytes:
@@ -51,8 +66,18 @@ class SafeArchiveExtractor:
                     )
 
                 # 检查路径穿越
-                norm_name = os.path.normpath(member.filename)
-                if norm_name.startswith("..") or os.path.isabs(norm_name) or "/../" in member.filename or "\\..\\" in member.filename:
+                original_name = member.filename.replace("\\", "/")
+                original_norm = os.path.normpath(original_name)
+                if original_norm.startswith("..") or os.path.isabs(original_norm) or "/../" in original_name:
+                    raise ArchiveSafetyError(f"检测到路径穿越攻击特征: {member.filename}")
+
+                member_name = original_name
+                if root_prefix and member_name.startswith(root_prefix):
+                    member_name = member_name[len(root_prefix):]
+                if not member_name:
+                    continue
+                norm_name = os.path.normpath(member_name)
+                if norm_name.startswith("..") or os.path.isabs(norm_name) or "/../" in member_name:
                     raise ArchiveSafetyError(f"检测到路径穿越攻击特征: {member.filename}")
 
                 dest_path = (target_dir / norm_name).resolve()

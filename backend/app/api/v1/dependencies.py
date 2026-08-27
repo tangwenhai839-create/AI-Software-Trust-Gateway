@@ -21,7 +21,8 @@ async def list_dependencies(scan_id: str):
     for item in items:
         vulns = [VulnerabilitySchema(
             id=v.get("id", ""), advisory_id=v.get("advisory_id", ""), aliases=v.get("aliases", []),
-            summary=v.get("summary", ""), cvss_score=v.get("cvss_score"), severity=v.get("severity", "medium"),
+            summary=v.get("summary", ""), details=v.get("details", ""),
+            cvss_score=v.get("cvss_score"), severity=v.get("severity", "medium"),
             fixed_versions=v.get("fixed_versions", []), source_url=v.get("source_url", ""),
         ) for v in (item.vulnerabilities_json or [])]
         result.append(DependencySchema(

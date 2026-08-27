@@ -80,6 +80,7 @@ class VulnerabilitySchema(BaseModel):
     advisory_id: str
     aliases: List[str] = Field(default_factory=list)
     summary: str
+    details: str = ""
     cvss_score: Optional[float] = None
     severity: Severity
     fixed_versions: List[str] = Field(default_factory=list)

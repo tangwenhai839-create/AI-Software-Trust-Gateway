@@ -87,6 +87,7 @@ export interface Vulnerability {
   advisory_id: string;
   aliases: string[];
   summary: string;
+  details: string;
   cvss_score?: number;
   severity: Severity;
   fixed_versions: string[];

@@ -1,7 +1,9 @@
 """AI Software Trust Gateway - OSV 漏洞数据库客户端 (OSV API Client with Batch, Real CVSS & Fallback)
 """
+import asyncio
 import re
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import quote
 import httpx
 
 from backend.app.core.config import settings
@@ -74,6 +76,7 @@ class OSVClient:
 
     def __init__(self, api_url: Optional[str] = None, timeout: Optional[int] = None):
         self.api_url = api_url or settings.OSV_API_URL
+        self.detail_api_base = self.api_url.rsplit("/", 1)[0] + "/vulns"
         self.timeout = timeout or settings.OSV_TIMEOUT_SECONDS
 
     async def query_batch_vulnerabilities(
@@ -96,10 +99,14 @@ class OSVClient:
                 if resp.status_code == 200:
                     data = resp.json()
                     raw_results = data.get("results", [])
+                    detail_cache = await self._fetch_missing_details(client, raw_results)
                     for idx, res in enumerate(raw_results):
                         vulns_data = res.get("vulns", [])
-                        parsed_vulns = [self._parse_osv_item(v) for v in vulns_data]
-                        results[idx] = parsed_vulns
+                        parsed_vulns = [
+                            self._parse_osv_item(detail_cache.get(v.get("id"), v))
+                            for v in vulns_data
+                        ]
+                        results[idx] = self._deduplicate_vulnerabilities(parsed_vulns)
                     return results, True
                 else:
                     logger.warning("OSV API 请求返回非 200", status=resp.status_code)
@@ -107,6 +114,53 @@ class OSVClient:
         except Exception as e:
             logger.warning("OSV 漏洞数据库查询离线或超时，降级为离线依赖审查", error=str(e))
             return results, False
+
+    async def _fetch_missing_details(
+        self,
+        client: httpx.AsyncClient,
+        raw_results: List[Dict[str, Any]],
+    ) -> Dict[str, Dict[str, Any]]:
+        """Enrich querybatch's minimal ID records with OSV vulnerability details."""
+        minimal_items: Dict[str, Dict[str, Any]] = {}
+        for result in raw_results:
+            for item in result.get("vulns", []):
+                advisory_id = item.get("id")
+                if advisory_id:
+                    minimal_items.setdefault(advisory_id, item)
+
+        semaphore = asyncio.Semaphore(8)
+
+        async def fetch_one(advisory_id: str, fallback: Dict[str, Any]):
+            if fallback.get("summary") and fallback.get("affected"):
+                return advisory_id, fallback
+            try:
+                async with semaphore:
+                    response = await client.get(
+                        f"{self.detail_api_base}/{quote(advisory_id, safe='')}",
+                    )
+                if response.status_code == 200:
+                    return advisory_id, {**fallback, **response.json()}
+            except Exception as exc:
+                logger.debug("OSV 漏洞详情查询失败，保留基础记录", advisory_id=advisory_id, error=str(exc))
+            return advisory_id, fallback
+
+        enriched = await asyncio.gather(
+            *(fetch_one(advisory_id, item) for advisory_id, item in minimal_items.items())
+        )
+        return dict(enriched)
+
+    @staticmethod
+    def _deduplicate_vulnerabilities(vulnerabilities: List[Vulnerability]) -> List[Vulnerability]:
+        """Collapse OSV records that describe the same issue through aliases."""
+        deduplicated: List[Vulnerability] = []
+        seen_identifiers: set[str] = set()
+        for vulnerability in vulnerabilities:
+            identifiers = {vulnerability.advisory_id, *vulnerability.aliases}
+            if identifiers & seen_identifiers:
+                continue
+            deduplicated.append(vulnerability)
+            seen_identifiers.update(identifier for identifier in identifiers if identifier)
+        return deduplicated
 
     def _parse_osv_item(self, item: Dict[str, Any]) -> Vulnerability:
         advisory_id = item.get("id", "OSV-UNKNOWN")

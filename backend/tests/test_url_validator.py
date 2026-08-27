@@ -1,8 +1,10 @@
 """URL 与 SSRF 防御单元测试
 """
 import pytest
+from unittest.mock import patch
 from backend.app.core.errors import SSRFValidationError
 from backend.app.core.security import normalize_and_validate_github_url, validate_outbound_url_ssrf, redact_secrets
+from backend.app.ingestion.url_validator import GitHubUrlValidator
 
 
 def test_valid_github_urls():
@@ -37,6 +39,17 @@ def test_ssrf_blocked_hosts():
 
     with pytest.raises(SSRFValidationError):
         validate_outbound_url_ssrf("http://169.254.169.254/latest/meta-data")
+
+
+def test_github_proxy_fake_ip_is_narrowly_allowed():
+    fake_ip_result = [(2, 1, 6, "", ("198.18.0.100", 0))]
+    with patch("socket.getaddrinfo", return_value=fake_ip_result):
+        canonical, owner, repo = GitHubUrlValidator.validate("https://github.com/psf/requests")
+        assert canonical == "https://github.com/psf/requests"
+        assert (owner, repo) == ("psf", "requests")
+
+        with pytest.raises(SSRFValidationError):
+            validate_outbound_url_ssrf("https://example.com/resource")
 
 
 def test_secret_redaction():

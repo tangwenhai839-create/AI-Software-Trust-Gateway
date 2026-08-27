@@ -31,3 +31,15 @@ def test_path_traversal_zip_blocking():
         extract_target = os.path.join(tmp_dir, "extracted")
         with pytest.raises(ArchiveSafetyError):
             SafeArchiveExtractor.extract_zip(zip_path, extract_target)
+
+
+def test_single_archive_root_can_be_stripped_for_short_windows_paths():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        zip_path = os.path.join(tmp_dir, "github.zip")
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            zf.writestr("owner-repo-abcdef/deep/file.txt", "content")
+
+        extract_target = os.path.join(tmp_dir, "extracted")
+        SafeArchiveExtractor.extract_zip(zip_path, extract_target, strip_single_root=True)
+        assert os.path.exists(os.path.join(extract_target, "deep", "file.txt"))
+        assert not os.path.exists(os.path.join(extract_target, "owner-repo-abcdef"))

@@ -4,6 +4,8 @@ import pytest
 from backend.app.dependencies.parsers.python_parser import PythonDependencyParser
 from backend.app.dependencies.parsers.node_parser import NodeDependencyParser
 from backend.app.domain.enums import DependencyScope, Ecosystem
+from backend.app.domain.models import Vulnerability
+from backend.app.dependencies.osv_client import OSVClient
 
 
 def test_python_requirements_parser():
@@ -26,3 +28,11 @@ def test_node_package_json_parser(tmp_path):
     assert express_dep.scope == DependencyScope.DIRECT
     lodash_dep = next(d for d in deps if d.name == "lodash")
     assert lodash_dep.scope == DependencyScope.UNRESOLVED
+
+
+def test_osv_alias_records_are_deduplicated():
+    ghsa = Vulnerability(advisory_id="GHSA-aaaa-bbbb-cccc", aliases=["CVE-2025-1234", "PYSEC-2025-1"])
+    pysec = Vulnerability(advisory_id="PYSEC-2025-1", aliases=["CVE-2025-1234", "GHSA-aaaa-bbbb-cccc"])
+    unique = OSVClient._deduplicate_vulnerabilities([ghsa, pysec])
+    assert len(unique) == 1
+    assert unique[0].advisory_id == "GHSA-aaaa-bbbb-cccc"

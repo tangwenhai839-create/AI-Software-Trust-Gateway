@@ -1,5 +1,5 @@
 #define MyAppName "AI Software Trust Gateway"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #define MyAppPublisher "ASTG Team"
 #define MyAppExeName "ASTG.exe"
 
