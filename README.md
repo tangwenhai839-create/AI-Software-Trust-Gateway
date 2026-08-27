@@ -175,7 +175,7 @@ python -m pytest backend/tests/ -v
 
 生成结果位于：
 
-`dist\installer\AI-Software-Trust-Gateway-Setup-1.0.2.exe`
+`dist\installer\AI-Software-Trust-Gateway-Setup-1.0.3.exe`
 
 安装包内置后端、Web 前端、SQLite、规则、Schema 和 Node.js 运行时。默认安装到当前用户的 LocalAppData，不需要管理员权限；桌面控制窗口负责启动、打开和停止本地服务。
 

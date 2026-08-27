@@ -65,13 +65,10 @@ class DeterministicScoringEngine:
 
         # 2. 依赖漏洞风险分 (0 - 100)
         dep_penalty = 0
-        has_critical_vuln = False
         for dep in dependencies:
             for vuln in dep.vulnerabilities:
                 v_sev = vuln.severity.value if isinstance(vuln.severity, Severity) else str(vuln.severity).lower()
                 dep_penalty += self.severity_penalties.get(v_sev, 0)
-                if v_sev == "critical":
-                    has_critical_vuln = True
 
         dep_risk = min(100.0, float(dep_penalty))
 
@@ -115,10 +112,6 @@ class DeterministicScoringEngine:
         elif has_high_finding and final_safety_score > 69:
             final_safety_score = 69
             caps_applied.append("存在已证实的高危安全发现 (High Finding)，安全分上限限制为 69 (中风险)")
-
-        if has_critical_vuln and final_safety_score > 49:
-            final_safety_score = 49
-            caps_applied.append("存在已知的严重依赖漏洞 (Critical CVE)，安全分上限限制为 49")
 
         final_risk_score = 100 - final_safety_score
 

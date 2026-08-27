@@ -71,20 +71,20 @@ export const DependencyTable: React.FC<DependencyTableProps> = ({ dependencies }
                 <td style={{ padding: '10px', verticalAlign: 'top', minWidth: '420px' }}>
                   {hasVulns ? (
                     <div>
-                      <div style={{ color: '#fca5a5', fontSize: '12px', marginBottom: '8px' }}>
-                        检测到 {dep.vulnerabilities.length} 个去重后的已知漏洞，点击每项查看风险原因和修复版本。
+                      <div style={{ color: '#fbbf24', fontSize: '12px', marginBottom: '8px' }}>
+                        黄色漏洞风险：检测到 {dep.vulnerabilities.length} 个去重后的已知漏洞。漏洞表示需要升级或复核，不等同于木马、病毒或劫持行为。
                       </div>
                       {dep.vulnerabilities.map((v) => (
-                        <details key={v.id} style={{ marginBottom: '8px', background: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.18)', borderRadius: '6px', padding: '8px 10px' }}>
-                          <summary style={{ color: '#f87171', fontWeight: 600, cursor: 'pointer', lineHeight: 1.5 }}>
+                        <details key={v.id} style={{ marginBottom: '8px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.28)', borderRadius: '6px', padding: '8px 10px' }}>
+                          <summary style={{ color: '#fbbf24', fontWeight: 600, cursor: 'pointer', lineHeight: 1.5 }}>
                             <ShieldAlert size={14} style={{ display: 'inline', marginRight: '5px', verticalAlign: '-2px' }} />
-                            [{severityText[v.severity] || v.severity}] {v.advisory_id} — {v.summary || 'OSV 已确认该版本受影响'}
+                            [漏洞风险] {v.advisory_id} — {v.summary || 'OSV 已确认该版本受影响'}
                           </summary>
                           <div style={{ marginTop: '8px', color: '#cbd5e1', fontSize: '12px', lineHeight: 1.65 }}>
-                            <div><strong style={{ color: '#fca5a5' }}>为什么报出：</strong>项目声明使用 {dep.name} {dep.version}，OSV 将该版本列入此漏洞的受影响版本。</div>
-                            <div><strong style={{ color: '#fca5a5' }}>为什么有风险：</strong>{explainVulnerabilityImpact(v.summary || '', v.details || '')}</div>
+                            <div><strong style={{ color: '#fbbf24' }}>为什么报出：</strong>项目声明使用 {dep.name} {dep.version}，OSV 将该版本列入此漏洞的受影响版本。</div>
+                            <div><strong style={{ color: '#fbbf24' }}>为什么有风险：</strong>{explainVulnerabilityImpact(v.summary || '', v.details || '')}</div>
                             {v.details && <div><strong>漏洞说明：</strong>{v.details}</div>}
-                            <div><strong>严重度：</strong>{severityText[v.severity] || v.severity}{v.cvss_score != null ? `（CVSS ${v.cvss_score}/10）` : '（OSV 未提供可计算的 CVSS 分数）'}</div>
+                            <div><strong>OSV 技术严重度：</strong>{severityText[v.severity] || v.severity}{v.cvss_score != null ? `（CVSS ${v.cvss_score}/10）` : '（OSV 未提供可计算的 CVSS 分数）'}；界面仍按黄色漏洞风险展示。</div>
                             <div><strong>修复建议：</strong>{v.fixed_versions?.length ? `升级到 ${Array.from(new Set(v.fixed_versions)).join('、')} 或更高安全版本。` : '打开官方公告确认已修复版本，并优先升级到当前维护分支的最新版。'}</div>
                             {v.aliases?.length > 0 && <div><strong>关联编号：</strong>{v.aliases.join('、')}</div>}
                             <a href={v.source_url} target="_blank" rel="noreferrer" style={{ color: '#38bdf8', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>

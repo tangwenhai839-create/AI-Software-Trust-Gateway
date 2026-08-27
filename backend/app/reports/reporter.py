@@ -221,7 +221,7 @@ class ReportGenerator:
         deps_html = ""
         for dep in data.get("dependencies", []):
             vulns = dep.get("vulnerabilities", [])
-            vuln_tag = f'<span style="color: #ef4444; font-weight: bold;">{len(vulns)} 漏洞</span>' if vulns else '<span style="color: #10b981;">安全</span>'
+            vuln_tag = f'<span style="color: #f59e0b; font-weight: bold;">⚠ {len(vulns)} 个黄色漏洞风险</span>' if vulns else '<span style="color: #10b981;">安全</span>'
             deps_html += f"""
             <tr style="border-bottom: 1px solid #334155;">
               <td style="padding: 10px; color: #f8fafc; font-family: monospace;">{e(dep.get("name", ""))}</td>

@@ -28,6 +28,10 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, index }) => {
 
   const sev = finding.severity.toLowerCase();
   const badgeClass = `badge badge-${sev}`;
+  const isHighRisk = sev === 'critical' || sev === 'high';
+  const riskColor = isHighRisk ? '#f87171' : '#fbbf24';
+  const riskBackground = isHighRisk ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)';
+  const riskBorder = isHighRisk ? 'rgba(239, 68, 68, 0.22)' : 'rgba(245, 158, 11, 0.24)';
 
   return (
     <div
@@ -55,7 +59,7 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, index }) => {
               <span>位置: <code style={{ color: '#cbd5e1' }}>{finding.file_path}:{finding.line_start}</code></span>
               <span>扫描器: {finding.scanner_name}</span>
             </div>
-            <div style={{ fontSize: '12px', color: '#fca5a5', marginTop: '7px', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '12px', color: riskColor, marginTop: '7px', lineHeight: 1.5 }}>
               为什么有风险：{explainRisk(finding)}
             </div>
           </div>
@@ -75,8 +79,8 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, index }) => {
       {/* 展开的详情与代码证据 */}
       {expanded && (
         <div style={{ marginTop: '16px', borderTop: '1px solid #1e293b', paddingTop: '14px' }}>
-          <div style={{ marginBottom: '12px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.22)', padding: '10px 14px', borderRadius: '6px', fontSize: '13px', lineHeight: 1.6 }}>
-            <strong style={{ color: '#f87171' }}>风险解释：</strong> {explainRisk(finding)}
+          <div style={{ marginBottom: '12px', background: riskBackground, border: `1px solid ${riskBorder}`, padding: '10px 14px', borderRadius: '6px', fontSize: '13px', lineHeight: 1.6 }}>
+            <strong style={{ color: riskColor }}>{isHighRisk ? '高风险解释：' : '风险解释：'}</strong> {explainRisk(finding)}
             <div style={{ color: '#94a3b8', marginTop: '4px' }}>
               报告原因：扫描规则在 {finding.file_path}:{finding.line_start} 找到了对应调用或数据特征；这是一条需复核的安全发现，不等同于直接判定软件恶意。
             </div>

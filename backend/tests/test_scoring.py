@@ -71,3 +71,22 @@ def test_high_finding_triggers_score_cap():
     assert score.safety_score <= 69
     assert score.risk_level in (RiskLevel.MEDIUM, RiskLevel.HIGH)
     assert any("High Finding" in cap for cap in score.caps_applied)
+
+
+def test_dependency_vulnerability_is_warning_not_red_score_cap():
+    engine = DeterministicScoringEngine()
+    dependency = Dependency(
+        name="example-package",
+        version="1.0.0",
+        vulnerabilities=[Vulnerability(advisory_id="CVE-2025-0001", severity=Severity.CRITICAL)],
+    )
+    score = engine.calculate_score(
+        scan_id="s4",
+        findings=[],
+        dependencies=[dependency],
+        provenance={},
+        ai_assessment=None,
+        coverage={"static": 1.0, "dependencies": 1.0},
+    )
+    assert score.risk_level != RiskLevel.HIGH
+    assert not any("CVE" in cap or "依赖漏洞" in cap for cap in score.caps_applied)

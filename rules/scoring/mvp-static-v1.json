@@ -25,11 +25,6 @@
       "condition": "has_high_confirmed_finding",
       "max_safety_score": 69,
       "reason": "存在已证实的高危安全发现 (High Finding)，安全分上限限制为 69 (中风险)"
-    },
-    {
-      "condition": "has_critical_vulnerability",
-      "max_safety_score": 49,
-      "reason": "存在已知的严重依赖漏洞 (Critical CVE/Advisory)，安全分上限限制为 49"
     }
   ],
   "boundaries": [
