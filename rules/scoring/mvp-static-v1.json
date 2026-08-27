@@ -1,0 +1,41 @@
+{
+  "version": "mvp-static-v1",
+  "name": "MVP Static Trust Scoring Profile",
+  "description": "Deterministic scoring ruleset for static code analysis, dependency vulnerabilities, and project provenance",
+  "weights": {
+    "static_code": 0.45,
+    "dependencies": 0.35,
+    "provenance": 0.15,
+    "ai_reasoning": 0.05
+  },
+  "severity_penalties": {
+    "critical": 40,
+    "high": 20,
+    "medium": 8,
+    "low": 3,
+    "info": 0
+  },
+  "caps": [
+    {
+      "condition": "has_critical_confirmed_finding",
+      "max_safety_score": 39,
+      "reason": "存在已证实的严重安全发现 (Critical Finding)，安全分上限限制为 39 (高风险)"
+    },
+    {
+      "condition": "has_high_confirmed_finding",
+      "max_safety_score": 69,
+      "reason": "存在已证实的高危安全发现 (High Finding)，安全分上限限制为 69 (中风险)"
+    },
+    {
+      "condition": "has_critical_vulnerability",
+      "max_safety_score": 49,
+      "reason": "存在已知的严重依赖漏洞 (Critical CVE/Advisory)，安全分上限限制为 49"
+    }
+  ],
+  "boundaries": [
+    { "min_score": 90, "max_score": 100, "level": "safe", "label": "安全 (低观测风险)", "action": "可考虑运行，仍需注意静态分析局限" },
+    { "min_score": 70, "max_score": 89, "level": "low", "label": "低风险", "action": "在最小权限环境中运行" },
+    { "min_score": 40, "max_score": 69, "level": "medium", "label": "中风险", "action": "建议人工复核或沙箱验证后运行" },
+    { "min_score": 0, "max_score": 39, "level": "high", "label": "高风险", "action": "默认阻止运行，需要安全专家介入复核" }
+  ]
+}

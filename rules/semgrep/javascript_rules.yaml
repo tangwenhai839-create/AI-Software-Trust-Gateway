@@ -1,0 +1,55 @@
+rules:
+  - id: astg-js-eval-usage
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: Function(...)
+      - pattern: setTimeout($CODE, ...)
+      - pattern: setInterval($CODE, ...)
+    message: "检测到 JavaScript 动态代码执行 (eval / new Function)，存在代码注入风险。"
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: dynamic_execution
+      confidence: 0.75
+      remediation: "避免使用 eval 或 new Function 执行动态字符串代码。"
+
+  - id: astg-js-child-process-exec
+    pattern-either:
+      - pattern: require('child_process').exec(...)
+      - pattern: import { exec } from 'child_process'
+      - pattern: execSync(...)
+    message: "检测到直接执行系统 shell 命令，可能存在命令注入风险。"
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      category: command_execution
+      confidence: 0.70
+      remediation: "推荐使用 execFile 或 spawn 并传递参数数组，禁用 shell 参数拼接。"
+
+  - id: astg-js-sensitive-file-read
+    pattern-either:
+      - pattern: fs.readFileSync($PATH, ...)
+      - pattern: fs.readFile($PATH, ...)
+      - pattern: fs.promises.readFile($PATH, ...)
+    pattern-regex: '(?i)(\.ssh|\.aws|\.env|id_rsa|\.kube|cookies\.sqlite|Login Data|keychain)'
+    message: "检测到读取系统敏感凭据文件: $PATH"
+    languages: [javascript, typescript]
+    severity: ERROR
+    metadata:
+      category: sensitive_file_access
+      confidence: 0.85
+      remediation: "检查敏感文件访问是否必要且已征得用户明确同意。"
+
+  - id: astg-js-suspicious-network
+    pattern-either:
+      - pattern: fetch($URL, ...)
+      - pattern: axios.post($URL, ...)
+      - pattern: https.request($URL, ...)
+    pattern-regex: '(?i)(webhook|discord\.com/api/webhooks|telegram\.org/bot|pastebin\.com|ngrok\.io|transfer\.sh|pipedream\.net)'
+    message: "检测到向可疑/数据外传终端发送网络请求: $URL"
+    languages: [javascript, typescript]
+    severity: ERROR
+    metadata:
+      category: network_exfiltration
+      confidence: 0.80
+      remediation: "确认外部通信端点合法合规，不发送敏感用户数据。"

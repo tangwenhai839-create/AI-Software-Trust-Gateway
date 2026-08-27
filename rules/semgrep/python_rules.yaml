@@ -1,0 +1,77 @@
+rules:
+  - id: astg-py-sensitive-file-access
+    pattern-either:
+      - pattern: open($PATH, ...)
+      - pattern: pathlib.Path($PATH).read_text(...)
+      - pattern: pathlib.Path($PATH).read_bytes(...)
+    pattern-regex: '(?i)(\.ssh|\.aws|\.gnupg|id_rsa|id_ed25519|\.kube/config|cookies\.sqlite|Login Data|keychain|wallet\.dat|\.env|\.git/config)'
+    message: "检测到可能访问敏感凭据文件 (SSH/AWS/Wallet/Browser/Env): $PATH"
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: sensitive_file_access
+      confidence: 0.85
+      remediation: "检查敏感文件访问是否符合软件声明用途，并确保仅在显式用户授权下访问。"
+
+  - id: astg-py-hidden-network-call
+    patterns:
+      - pattern-either:
+          - pattern: requests.$METHOD($URL, ...)
+          - pattern: urllib.request.urlopen($URL, ...)
+          - pattern: httpx.$METHOD($URL, ...)
+          - pattern: aiohttp.ClientSession().$METHOD($URL, ...)
+      - pattern-regex: '(?i)(webhook|discord\.com/api/webhooks|telegram\.org/bot|pastebin\.com|ngrok\.io|transfer\.sh|temp\.sh|pipedream\.net)'
+    message: "检测到向已知可疑/数据外传服务发起网络请求: $URL"
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: network_exfiltration
+      confidence: 0.80
+      remediation: "验证外部服务通信地址是否为软件核心功能所必需，避免将未经授权的数据外传。"
+
+  - id: astg-py-dynamic-code-execution
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: __import__(...)
+      - pattern: getattr(__builtins__, ...)
+    message: "检测到动态代码执行 (eval/exec/动态导入)，可能导致任意代码执行风险。"
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: dynamic_execution
+      confidence: 0.75
+      remediation: "避免使用 eval/exec 执行动态代码，尽量改用明确的解析器或函数映射。"
+
+  - id: astg-py-insecure-subprocess
+    pattern-either:
+      - pattern: subprocess.Popen(..., shell=True, ...)
+      - pattern: subprocess.call(..., shell=True, ...)
+      - pattern: subprocess.run(..., shell=True, ...)
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+    message: "检测到使用 shell=True 或 os.system 执行系统命令，存在命令注入风险。"
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: command_execution
+      confidence: 0.70
+      remediation: "避免使用 shell=True，改为传递参数列表数组并严格验证外部输入。"
+
+  - id: astg-py-obfuscated-decode
+    patterns:
+      - pattern-either:
+          - pattern: base64.b64decode(...)
+          - pattern: bytes.fromhex(...)
+          - pattern: codecs.decode(..., 'rot_13')
+          - pattern: zlib.decompress(...)
+      - pattern-inside: |
+          ...
+          exec(...)
+    message: "检测到解密/解混淆后直接执行 (Base64/Hex/Zlib -> exec) 恶意代码模式。"
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: obfuscation
+      confidence: 0.90
+      remediation: "源码中不应包含混淆后直接动态执行的 payload。"

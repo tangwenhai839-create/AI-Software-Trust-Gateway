@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ASTGAIOutputV1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "purpose_assessment",
+    "finding_assessments",
+    "overall_assessment"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["1.0"] },
+    "purpose_assessment": { "type": "string" },
+    "finding_assessments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "finding_id",
+          "behavior",
+          "likely_reason",
+          "purpose_alignment",
+          "benign_explanations",
+          "malicious_hypotheses",
+          "risk_probability",
+          "confidence",
+          "evidence_refs",
+          "needs_verification",
+          "verification_steps"
+        ],
+        "properties": {
+          "finding_id": { "type": "string" },
+          "behavior": { "type": "string" },
+          "likely_reason": { "type": "string" },
+          "purpose_alignment": { "type": "string", "enum": ["aligned", "unclear", "misaligned"] },
+          "benign_explanations": { "type": "array", "items": { "type": "string" } },
+          "malicious_hypotheses": { "type": "array", "items": { "type": "string" } },
+          "risk_probability": { "type": "number", "minimum": 0, "maximum": 1 },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "evidence_refs": { "type": "array", "items": { "type": "string" } },
+          "needs_verification": { "type": "boolean" },
+          "verification_steps": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "overall_assessment": {
+      "type": "object",
+      "required": ["risk_probability", "confidence", "summary", "limitations"],
+      "properties": {
+        "risk_probability": { "type": "number", "minimum": 0, "maximum": 1 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "summary": { "type": "string" },
+        "limitations": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

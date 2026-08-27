@@ -1,0 +1,95 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: astg-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: astg_user
+      POSTGRES_PASSWORD: astg_password
+      POSTGRES_DB: astg_db
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U astg_user -d astg_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: astg-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: astg-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ASTG_ENV: production
+      ASTG_HOST: 0.0.0.0
+      ASTG_PORT: 8000
+      ASTG_DATABASE_URL: postgresql+asyncpg://astg_user:astg_password@postgres:5432/astg_db
+      ASTG_QUEUE_MODE: celery
+      ASTG_REDIS_URL: redis://redis:6379/0
+      ASTG_ARTIFACTS_DIR: /app/artifacts
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - artifacts_data:/app/artifacts
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: astg-worker
+    command: ["celery", "-A", "backend.app.workers.celery_app:celery_app", "worker", "--loglevel=info"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ASTG_ENV: production
+      ASTG_DATABASE_URL: postgresql+asyncpg://astg_user:astg_password@postgres:5432/astg_db
+      ASTG_QUEUE_MODE: celery
+      ASTG_REDIS_URL: redis://redis:6379/0
+      ASTG_ARTIFACTS_DIR: /app/artifacts
+    volumes:
+      - artifacts_data:/app/artifacts
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: astg-frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000/api/v1
+
+volumes:
+  pgdata:
+  redisdata:
+  artifacts_data:
