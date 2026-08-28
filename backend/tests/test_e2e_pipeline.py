@@ -39,9 +39,10 @@ async def test_e2e_suspicious_stealer_fixture_scan():
 
     assert res_scan.status in (ScanStatus.COMPLETED, ScanStatus.PARTIAL)
     assert len(res_findings) >= 2
-    # 触发安全分上限 (High Finding -> safety_score <= 69)
-    assert res_score.safety_score <= 69
-    assert res_score.risk_level in (RiskLevel.MEDIUM, RiskLevel.HIGH)
+    # Static references/capabilities are warnings, not a malware verdict.
+    assert res_score.safety_score >= 70
+    assert res_score.risk_level != RiskLevel.HIGH
+    assert res_score.caps_applied == []
 
 
 @pytest.mark.asyncio

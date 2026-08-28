@@ -82,7 +82,7 @@ class NativeASTPythonScanner(ScannerAdapter):
                         rule_id="py-dynamic-execution",
                         category=FindingCategory.DYNAMIC_EXECUTION,
                         title=f"检测到动态代码执行 ({func_name})",
-                        severity=Severity.HIGH if func_name == "exec" else Severity.MEDIUM,
+                        severity=Severity.MEDIUM,
                         confidence=0.85,
                         file_path=rel_path,
                         line_start=line_no,
@@ -99,7 +99,7 @@ class NativeASTPythonScanner(ScannerAdapter):
                         rule_id="py-os-command-execution",
                         category=FindingCategory.COMMAND_EXECUTION,
                         title=f"检测到调用系统命令接口 (os.{func_name})",
-                        severity=Severity.HIGH,
+                        severity=Severity.MEDIUM,
                         confidence=0.80,
                         file_path=rel_path,
                         line_start=line_no,
@@ -121,7 +121,7 @@ class NativeASTPythonScanner(ScannerAdapter):
                             rule_id="py-subprocess-shell-true",
                             category=FindingCategory.COMMAND_EXECUTION,
                             title="检测到使用 subprocess (shell=True) 执行命令",
-                            severity=Severity.HIGH,
+                            severity=Severity.MEDIUM,
                             confidence=0.85,
                             file_path=rel_path,
                             line_start=line_no,
@@ -143,7 +143,7 @@ class NativeASTPythonScanner(ScannerAdapter):
                         rule_id="py-sensitive-path-reference",
                         category=FindingCategory.SENSITIVE_FILE_ACCESS,
                         title=f"检测到引用系统敏感凭据路径 ({val})",
-                        severity=Severity.HIGH,
+                        severity=Severity.MEDIUM,
                         confidence=0.80,
                         file_path=rel_path,
                         line_start=line_no,
@@ -160,7 +160,7 @@ class NativeASTPythonScanner(ScannerAdapter):
                         rule_id="py-suspicious-exfiltration-endpoint",
                         category=FindingCategory.NETWORK_EXFILTRATION,
                         title=f"检测到引用可疑数据外传或 Webhook 接口 ({val})",
-                        severity=Severity.HIGH,
+                        severity=Severity.MEDIUM,
                         confidence=0.85,
                         file_path=rel_path,
                         line_start=line_no,
@@ -250,28 +250,28 @@ class NativeJSPatternScanner(ScannerAdapter):
                             if re.search(r"\beval\s*\(", line):
                                 findings.append(self._make_finding(
                                     scan_id, "js-eval", FindingCategory.DYNAMIC_EXECUTION,
-                                    "检测到 JavaScript eval 动态代码执行", Severity.HIGH, 0.85,
+                                    "检测到 JavaScript eval 动态代码执行", Severity.MEDIUM, 0.85,
                                     rel_path, idx, line, "避免使用 eval() 执行不可信动态代码。"
                                 ))
                             # child_process exec
                             if re.search(r"\b(exec|execSync)\s*\(", line) and ("child_process" in line or "exec" in line):
                                 findings.append(self._make_finding(
                                     scan_id, "js-exec", FindingCategory.COMMAND_EXECUTION,
-                                    "检测到 child_process.exec 系统命令执行", Severity.HIGH, 0.80,
+                                    "检测到 child_process.exec 系统命令执行", Severity.MEDIUM, 0.80,
                                     rel_path, idx, line, "改用 execFile 或 spawn 并传递参数数组。"
                                 ))
                             # sensitive path
                             if SENSITIVE_PATH_REGEX.search(line):
                                 findings.append(self._make_finding(
                                     scan_id, "js-sensitive-path", FindingCategory.SENSITIVE_FILE_ACCESS,
-                                    "检测到敏感凭据文件路径引用", Severity.HIGH, 0.80,
+                                    "检测到敏感凭据文件路径引用", Severity.MEDIUM, 0.80,
                                     rel_path, idx, line, "核实敏感文件读取是否符合软件声明用途。"
                                 ))
                             # exfiltration
                             if EXFILTRATION_HOST_REGEX.search(line):
                                 findings.append(self._make_finding(
                                     scan_id, "js-exfiltration", FindingCategory.NETWORK_EXFILTRATION,
-                                    "检测到可疑数据外传或 Webhook 接口", Severity.HIGH, 0.85,
+                                    "检测到可疑数据外传或 Webhook 接口", Severity.MEDIUM, 0.85,
                                     rel_path, idx, line, "检查该外部通信目标是否已在文档中明确声明。"
                                 ))
                     except Exception:

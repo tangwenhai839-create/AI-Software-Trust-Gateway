@@ -27,11 +27,11 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, index }) => {
   const [expanded, setExpanded] = useState(false);
 
   const sev = finding.severity.toLowerCase();
-  const badgeClass = `badge badge-${sev}`;
-  const isHighRisk = sev === 'critical' || sev === 'high';
-  const riskColor = isHighRisk ? '#f87171' : '#fbbf24';
-  const riskBackground = isHighRisk ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)';
-  const riskBorder = isHighRisk ? 'rgba(239, 68, 68, 0.22)' : 'rgba(245, 158, 11, 0.24)';
+  const isConfirmedDanger = finding.status === 'confirmed' && (sev === 'critical' || sev === 'high');
+  const badgeClass = isConfirmedDanger ? 'badge badge-critical' : 'badge badge-medium';
+  const riskColor = isConfirmedDanger ? '#f87171' : '#fbbf24';
+  const riskBackground = isConfirmedDanger ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)';
+  const riskBorder = isConfirmedDanger ? 'rgba(239, 68, 68, 0.22)' : 'rgba(245, 158, 11, 0.24)';
 
   return (
     <div
@@ -49,7 +49,7 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, index }) => {
         onClick={() => setExpanded(!expanded)}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span className={badgeClass}>{finding.severity.toUpperCase()}</span>
+          <span className={badgeClass}>{isConfirmedDanger ? '已确认危险' : '风险提醒'}</span>
           <div>
             <div style={{ fontWeight: 600, fontSize: '15px', color: '#f8fafc' }}>
               #{index} {finding.title}
@@ -58,6 +58,7 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, index }) => {
               <span>类别: <code style={{ color: '#38bdf8' }}>{finding.category}</code></span>
               <span>位置: <code style={{ color: '#cbd5e1' }}>{finding.file_path}:{finding.line_start}</code></span>
               <span>扫描器: {finding.scanner_name}</span>
+              <span>规则严重度: {finding.severity.toUpperCase()}</span>
             </div>
             <div style={{ fontSize: '12px', color: riskColor, marginTop: '7px', lineHeight: 1.5 }}>
               为什么有风险：{explainRisk(finding)}
@@ -80,9 +81,9 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, index }) => {
       {expanded && (
         <div style={{ marginTop: '16px', borderTop: '1px solid #1e293b', paddingTop: '14px' }}>
           <div style={{ marginBottom: '12px', background: riskBackground, border: `1px solid ${riskBorder}`, padding: '10px 14px', borderRadius: '6px', fontSize: '13px', lineHeight: 1.6 }}>
-            <strong style={{ color: riskColor }}>{isHighRisk ? '高风险解释：' : '风险解释：'}</strong> {explainRisk(finding)}
+            <strong style={{ color: riskColor }}>{isConfirmedDanger ? '已确认危险：' : '黄色风险提醒：'}</strong> {explainRisk(finding)}
             <div style={{ color: '#94a3b8', marginTop: '4px' }}>
-              报告原因：扫描规则在 {finding.file_path}:{finding.line_start} 找到了对应调用或数据特征；这是一条需复核的安全发现，不等同于直接判定软件恶意。
+              报告原因：扫描规则在 {finding.file_path}:{finding.line_start} 找到了对应调用或字符串特征；目前只证明该能力或引用存在，不证明它已经读取、外传数据或属于病毒。
             </div>
           </div>
           {finding.remediation && (

@@ -55,10 +55,15 @@ class DeterministicScoringEngine:
 
         for f in findings:
             sev = f.severity.value if isinstance(f.severity, Severity) else str(f.severity).lower()
-            static_penalty += self.severity_penalties.get(sev, 0)
-            if sev == "critical":
+            is_confirmed = f.status == "confirmed"
+            # Static rules describe capabilities or suspicious patterns, not a
+            # malware verdict. Until corroborated and explicitly confirmed,
+            # cap their effective penalty at the medium warning level.
+            effective_sev = sev if is_confirmed else ("medium" if sev in ("critical", "high") else sev)
+            static_penalty += self.severity_penalties.get(effective_sev, 0)
+            if is_confirmed and sev == "critical":
                 has_critical_finding = True
-            elif sev == "high":
+            elif is_confirmed and sev == "high":
                 has_high_finding = True
 
         static_risk = min(100.0, float(static_penalty))

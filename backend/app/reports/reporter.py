@@ -44,9 +44,12 @@ class ReportGenerator:
         html_path = scan_dir / "report.html"
 
         # 1. 结构化 JSON 报告
-        top_risks = [f.title for f in findings if f.severity.value in ("critical", "high")][:3]
+        top_risks = [
+            f.title for f in findings
+            if f.status == "confirmed" and f.severity.value in ("critical", "high")
+        ][:3]
         if not top_risks:
-            top_risks = ["在当前静态扫描覆盖范围内未发现严重风险"]
+            top_risks = ["当前未发现已确认的病毒或恶意行为；静态规则提示仍需结合上下文复核"]
 
         recommended_action = "在最小权限环境中运行"
         if score.risk_level.value == "safe":
@@ -187,7 +190,9 @@ class ReportGenerator:
         findings_html = ""
         for idx, f in enumerate(data.get("findings", []), 1):
             sev = f.get("severity", "medium").upper()
-            sev_color = "#ef4444" if sev in ("CRITICAL", "HIGH") else "#f59e0b" if sev == "MEDIUM" else "#3b82f6"
+            confirmed_danger = f.get("status") == "confirmed" and sev in ("CRITICAL", "HIGH")
+            sev_color = "#ef4444" if confirmed_danger else "#f59e0b"
+            display_label = "已确认危险" if confirmed_danger else "风险提醒"
 
             ev_html = ""
             for ev in f.get("evidences", []):
@@ -203,10 +208,13 @@ class ReportGenerator:
             <div style="background: #1e293b; border-radius: 8px; padding: 16px; margin-bottom: 12px; border-left: 4px solid {sev_color};">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="font-weight: 600; font-size: 15px; color: #f8fafc;">#{idx} {e(f.get("title", ""))}</div>
-                <span style="background: {sev_color}22; color: {sev_color}; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">{e(sev)}</span>
+                <span style="background: {sev_color}22; color: {sev_color}; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">{e(display_label)}</span>
               </div>
               <div style="color: #94a3b8; font-size: 13px; margin-top: 6px;">
-                类别: <code>{e(f.get("category", ""))}</code> | 文件: <code>{e(f.get("file_path", ""))}:{f.get("line_start", 0)}</code>
+                类别: <code>{e(f.get("category", ""))}</code> | 规则严重度: <code>{e(sev)}</code> | 文件: <code>{e(f.get("file_path", ""))}:{f.get("line_start", 0)}</code>
+              </div>
+              <div style="color: #fbbf24; font-size: 13px; margin-top: 6px;">
+                静态特征只表示能力或引用存在，不足以直接定性为病毒；红色仅用于已确认的恶意行为。
               </div>
               <div style="color: #cbd5e1; font-size: 13px; margin-top: 6px;">
                 <strong>修复建议:</strong> {e(f.get("remediation", ""))}

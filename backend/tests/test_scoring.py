@@ -33,6 +33,7 @@ def test_critical_finding_triggers_score_cap():
         confidence=0.95,
         file_path="exploit.py",
         line_start=1,
+        status="confirmed",
     )
     score = engine.calculate_score(
         scan_id="s2",
@@ -59,6 +60,7 @@ def test_high_finding_triggers_score_cap():
         confidence=0.90,
         file_path="stealer.py",
         line_start=5,
+        status="confirmed",
     )
     score = engine.calculate_score(
         scan_id="s3",
@@ -90,3 +92,22 @@ def test_dependency_vulnerability_is_warning_not_red_score_cap():
     )
     assert score.risk_level != RiskLevel.HIGH
     assert not any("CVE" in cap or "依赖漏洞" in cap for cap in score.caps_applied)
+
+
+def test_unconfirmed_static_signals_do_not_trigger_danger_cap():
+    engine = DeterministicScoringEngine()
+    signals = [
+        Finding(category=FindingCategory.SENSITIVE_FILE_ACCESS, severity=Severity.HIGH, status="active"),
+        Finding(category=FindingCategory.NETWORK_EXFILTRATION, severity=Severity.HIGH, status="active"),
+        Finding(category=FindingCategory.DYNAMIC_EXECUTION, severity=Severity.MEDIUM, status="active"),
+    ]
+    score = engine.calculate_score(
+        scan_id="s5",
+        findings=signals,
+        dependencies=[],
+        provenance={},
+        ai_assessment=None,
+        coverage={"static": 1.0, "dependencies": 1.0},
+    )
+    assert score.risk_level != RiskLevel.HIGH
+    assert score.caps_applied == []
